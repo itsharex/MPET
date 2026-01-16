@@ -1,0 +1,124 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- 浅色背景渐变 -->
+        <linearGradient id="bgGradient" x1="0" y1="0" x2="256" y2="256">
+            <stop offset="0%" stop-color="#FFFFFF" />
+            <stop offset="100%" stop-color="#F0F4F8" />
+        </linearGradient>
+        
+        <!-- 主色渐变 - 霓虹蓝紫 -->
+        <linearGradient id="neonBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#06B6D4" />
+            <stop offset="50%" stop-color="#3B82F6" />
+            <stop offset="100%" stop-color="#8B5CF6" />
+        </linearGradient>
+        
+        <!-- 发光效果 -->
+        <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        
+        <!-- 强发光 -->
+        <filter id="strongGlow">
+            <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+            <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+    
+    <!-- 浅色背景 -->
+    <rect width="256" height="256" rx="56" fill="url(#bgGradient)" />
+    
+    <!-- 外圈 - 14个协议节点 -->
+    <g filter="url(#glow)">
+        <circle cx="128" cy="40" r="5" fill="#06B6D4" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0s"/>
+        </circle>
+        <circle cx="180" cy="52" r="5" fill="#06B6D4" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.14s"/>
+        </circle>
+        <circle cx="216" cy="88" r="5" fill="#3B82F6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.28s"/>
+        </circle>
+        <circle cx="228" cy="128" r="5" fill="#3B82F6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.42s"/>
+        </circle>
+        <circle cx="216" cy="168" r="5" fill="#3B82F6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.56s"/>
+        </circle>
+        <circle cx="180" cy="204" r="5" fill="#8B5CF6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.7s"/>
+        </circle>
+        <circle cx="128" cy="216" r="5" fill="#8B5CF6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.84s"/>
+        </circle>
+        <circle cx="76" cy="204" r="5" fill="#8B5CF6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="0.98s"/>
+        </circle>
+        <circle cx="40" cy="168" r="5" fill="#8B5CF6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="1.12s"/>
+        </circle>
+        <circle cx="28" cy="128" r="5" fill="#3B82F6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="1.26s"/>
+        </circle>
+        <circle cx="40" cy="88" r="5" fill="#3B82F6" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="1.4s"/>
+        </circle>
+        <circle cx="76" cy="52" r="5" fill="#06B6D4" opacity="0.9">
+            <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite" begin="1.54s"/>
+        </circle>
+        <circle cx="164" cy="92" r="4" fill="#06B6D4" opacity="0.7">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="1.68s"/>
+        </circle>
+        <circle cx="92" cy="164" r="4" fill="#8B5CF6" opacity="0.7">
+            <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="1.82s"/>
+        </circle>
+    </g>
+    
+    <!-- 中圈 - 旋转的六边形 -->
+    <g filter="url(#glow)" opacity="0.5">
+        <polygon points="128,78 158,95 158,129 128,146 98,129 98,95" 
+                 stroke="url(#neonBlue)" stroke-width="2.5" fill="none">
+            <animateTransform attributeName="transform" type="rotate" 
+                            from="0 128 112" to="360 128 112" dur="20s" repeatCount="indefinite"/>
+        </polygon>
+    </g>
+    
+    <!-- 主图标 - 立体的M字母 -->
+    <g filter="url(#strongGlow)">
+        <!-- M字母主体 -->
+        <path d="M 85 95 L 85 145 M 85 95 L 105 120 M 105 120 L 128 95 M 128 95 L 151 120 M 151 120 L 171 95 M 171 95 L 171 145" 
+              stroke="url(#neonBlue)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        
+        <!-- 中心点 -->
+        <circle cx="128" cy="120" r="7" fill="url(#neonBlue)">
+            <animate attributeName="r" values="7;9;7" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+    </g>
+    
+    <!-- 装饰线条 -->
+    <g stroke="#3B82F6" stroke-width="1.5" fill="none" opacity="0.4">
+        <circle cx="128" cy="120" r="55" stroke-dasharray="5,5">
+            <animateTransform attributeName="transform" type="rotate" 
+                            from="0 128 120" to="360 128 120" dur="15s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="128" cy="120" r="70" stroke-dasharray="3,7">
+            <animateTransform attributeName="transform" type="rotate" 
+                            from="360 128 120" to="0 128 120" dur="25s" repeatCount="indefinite"/>
+        </circle>
+    </g>
+    
+    <!-- 底部文字 -->
+    <text x="128" y="245" text-anchor="middle" 
+          font-family="'Courier New', 'Consolas', monospace" 
+          font-weight="700" font-size="30" fill="url(#neonBlue)" 
+          filter="url(#glow)" letter-spacing="4">
+        MPET
+    </text>
+</svg>

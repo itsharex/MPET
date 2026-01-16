@@ -1,0 +1,341 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux AMD64
+          - os: ubuntu-latest
+            platform: linux/amd64
+            asset_name: MPET-linux-amd64
+            goos: linux
+            goarch: amd64
+          
+          # macOS Universal (ARM64 + AMD64)
+          - os: macos-latest
+            platform: darwin/universal
+            asset_name: MPET-darwin-universal
+            goos: darwin
+            goarch: universal
+          
+          # macOS ARM64 (Apple Silicon)
+          - os: macos-latest
+            platform: darwin/arm64
+            asset_name: MPET-darwin-arm64
+            goos: darwin
+            goarch: arm64
+          
+          # macOS AMD64 (Intel)
+          - os: macos-latest
+            platform: darwin/amd64
+            asset_name: MPET-darwin-amd64
+            goos: darwin
+            goarch: amd64
+          
+          # Windows AMD64
+          - os: windows-latest
+            platform: windows/amd64
+            asset_name: MPET-windows-amd64.exe
+            goos: windows
+            goarch: amd64
+
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Get Go cache directories
+        id: go-cache-paths
+        shell: bash
+        run: |
+          echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
+          echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+
+      - name: Set up Go cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.go-cache-paths.outputs.go-build }}
+            ${{ steps.go-cache-paths.outputs.go-mod }}
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      # Linux 特定依赖
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev upx-ucl
+
+      # macOS 特定依赖
+      - name: Install macOS dependencies
+        if: matrix.os == 'macos-latest'
+        run: |
+          # 确保 Xcode Command Line Tools 已安装
+          xcode-select --install 2>/dev/null || true
+          # 安装 UPX
+          brew install upx
+
+      # Windows 特定依赖
+      - name: Install Windows dependencies
+        if: matrix.os == 'windows-latest'
+        run: |
+          # 下载并安装 UPX
+          Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.2/upx-4.2.2-win64.zip" -OutFile "upx.zip"
+          Expand-Archive -Path "upx.zip" -DestinationPath "."
+          Move-Item -Path "upx-4.2.2-win64\upx.exe" -Destination "C:\Windows\System32\upx.exe"
+        shell: pwsh
+
+      - name: Install Wails
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Install frontend dependencies
+        run: |
+          cd frontend
+          pnpm install --frozen-lockfile
+
+      - name: Build application
+        shell: bash
+        run: |
+          mkdir -p dist
+          
+          # 设置编译优化参数
+          export CGO_ENABLED=1
+          export LDFLAGS="-s -w"
+          
+          # 构建应用
+          wails build \
+            -platform ${{ matrix.platform }} \
+            -clean \
+            -ldflags "-s -w" \
+            -trimpath
+          
+          # 移动构建产物到 dist 目录
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Windows: 压缩 exe 文件
+            mv build/bin/MPET.exe "dist/${{ matrix.asset_name }}"
+            echo "压缩前大小:"
+            ls -lh "dist/${{ matrix.asset_name }}"
+            upx --best --lzma "dist/${{ matrix.asset_name }}"
+            echo "压缩后大小:"
+            ls -lh "dist/${{ matrix.asset_name }}"
+            
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            # macOS: 压缩可执行文件后打包 .app
+            if [ -f "build/bin/MPET.app/Contents/MacOS/MPET" ]; then
+              echo "压缩前大小:"
+              ls -lh "build/bin/MPET.app/Contents/MacOS/MPET"
+              upx --best --lzma "build/bin/MPET.app/Contents/MacOS/MPET" || true
+              echo "压缩后大小:"
+              ls -lh "build/bin/MPET.app/Contents/MacOS/MPET"
+            fi
+            # 打包成 zip
+            cd build/bin
+            zip -r "../../dist/${{ matrix.asset_name }}.zip" MPET.app
+            cd ../..
+            
+          else
+            # Linux: 压缩可执行文件
+            mv build/bin/MPET "dist/${{ matrix.asset_name }}"
+            chmod +x "dist/${{ matrix.asset_name }}"
+            echo "压缩前大小:"
+            ls -lh "dist/${{ matrix.asset_name }}"
+            upx --best --lzma "dist/${{ matrix.asset_name }}"
+            echo "压缩后大小:"
+            ls -lh "dist/${{ matrix.asset_name }}"
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset_name }}
+          path: |
+            dist/${{ matrix.asset_name }}*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Display structure of downloaded files
+        run: |
+          echo "=== 构建产物列表 ==="
+          ls -R dist
+          echo ""
+          echo "=== 文件大小 ==="
+          find dist -type f -exec ls -lh {} \;
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # 获取上一个 tag
+          PREV_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            echo "changelog=Initial release" >> $GITHUB_OUTPUT
+          else
+            # 生成 changelog
+            CHANGELOG=$(git log ${PREV_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+            echo "changelog<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*/*
+          body: |
+            ## MPET - Multi-Protocol Exploitation Toolkit
+            
+            **多协议漏洞利用与攻击模拟平台**
+            
+            ### 📦 下载说明
+            
+            所有构建产物已使用 UPX 压缩，体积更小，启动速度更快。
+            
+            - **Windows**: `MPET-windows-amd64.exe` (已压缩)
+            - **Linux**: `MPET-linux-amd64` (已压缩)
+            - **macOS (通用版)**: `MPET-darwin-universal.zip` - 同时支持 Intel 和 Apple Silicon
+            - **macOS (Apple Silicon)**: `MPET-darwin-arm64.zip` - M1/M2/M3 芯片
+            - **macOS (Intel)**: `MPET-darwin-amd64.zip` - Intel 芯片
+            
+            > **注意**: macOS 版本首次运行可能需要在"系统偏好设置 > 安全性与隐私"中允许运行。
+            
+            ### ✨ 主要功能
+            
+            - ✅ 支持 25+ 种服务协议
+            - ✅ 智能导入：Fscan、Lightx 结果文件自动识别
+            - ✅ 拖拽上传：直接拖文件到窗口导入
+            - ✅ 未授权访问和弱口令检测
+            - ✅ Docker/Kubernetes 容器管理
+            - ✅ 漏洞报告自动生成
+            - ✅ SOCKS5 代理支持
+            
+            ### 🚀 性能优化
+            
+            - ✅ 使用 `-ldflags="-s -w"` 去除调试信息
+            - ✅ 使用 `-trimpath` 去除文件路径信息
+            - ✅ 使用 UPX 最佳压缩（--best --lzma）
+            - ✅ 体积减小约 60-70%
+            
+            ### 📝 更新日志
+            
+            ${{ steps.changelog.outputs.changelog }}
+            
+            ### ⚠️ 免责声明
+            
+            本工具仅供安全研究和合法授权测试使用。使用者需自行承担使用本工具所产生的任何法律责任。
+            
+            ---
+            
+            **公众号**: 浅梦安全  
+            **开发者**: onewin
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 可选：构建 Docker 镜像（如果需要）
+  docker:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+        continue-on-error: true
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKER_USERNAME }}/mpet
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha
+        continue-on-error: true
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+        continue-on-error: true

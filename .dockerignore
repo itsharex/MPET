@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.github
+
+# Build artifacts
+build/
+dist/
+*.exe
+*.app
+
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+data/
+reports/
+*.db
+config.json
+
+# Logs
+*.log
+
+# Documentation
+README.md
+README_ATTACK_LOGIN.md
+LICENSE
+docs/
+
+# Test files
+*_test.go
+test/

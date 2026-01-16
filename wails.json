@@ -1,0 +1,21 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "MPET",
+  "outputfilename": "MPET",
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm run build",
+  "frontend:dev:watcher": "pnpm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "assetdir": "./frontend/dist",
+  "author": {
+    "name": "onewin",
+    "email": "94044430+onewinner@users.noreply.github.com"
+  },
+  "info": {
+    "companyName": "onewin",
+    "productName": "MPET - Multi-Protocol Exploitation Toolkit",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2026, onewin",
+    "comments": "多协议漏洞利用与攻击模拟平台 - Multi-Protocol Exploitation and Attack Simulation Platform"
+  }
+}
