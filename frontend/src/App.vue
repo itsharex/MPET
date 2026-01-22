@@ -30,6 +30,12 @@ const themeConfig = computed(() => ({
   box-sizing: border-box;
 }
 
+html, body {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
 :root {
   --glass-bg: rgba(255, 255, 255, 0.95);
   --glass-border: rgba(0, 0, 0, 0.1);
