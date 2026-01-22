@@ -106,6 +106,10 @@ export function SaveVulnerability(arg1) {
   return window['go']['backend']['App']['SaveVulnerability'](arg1);
 }
 
+export function SelectDirectory() {
+  return window['go']['backend']['App']['SelectDirectory']();
+}
+
 export function Startup(arg1) {
   return window['go']['backend']['App']['Startup'](arg1);
 }

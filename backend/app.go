@@ -204,6 +204,11 @@ func (a *App) ExportReport(req services.ExportReportRequest) (string, error) {
 	return a.reportHandler.ExportReport(req)
 }
 
+// SelectDirectory 选择目录
+func (a *App) SelectDirectory() (string, error) {
+	return a.fileHandler.SelectDirectory()
+}
+
 // ===== 服务类型 =====
 func (a *App) GetServiceTypes() []map[string]interface{} {
 	return []map[string]interface{}{

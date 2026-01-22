@@ -206,3 +206,17 @@ func (h *FileHandler) DownloadSFTPFile(id string, filePath string) error {
 	_, err = io.Copy(outFile, remoteFile)
 	return err
 }
+
+// SelectDirectory 选择目录
+func (h *FileHandler) SelectDirectory() (string, error) {
+	dirPath, err := runtime.OpenDirectoryDialog(h.ctx, runtime.OpenDialogOptions{
+		Title: "选择报告导出目录",
+	})
+	if err != nil {
+		return "", fmt.Errorf("选择目录失败: %v", err)
+	}
+	if dirPath == "" {
+		return "", fmt.Errorf("用户取消了目录选择")
+	}
+	return dirPath, nil
+}

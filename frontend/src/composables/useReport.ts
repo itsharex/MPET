@@ -1,11 +1,24 @@
 import { ref } from 'vue'
-import { message } from 'ant-design-vue'
-import { ExportReport } from '../../wailsjs/go/backend/App'
+import { message, Modal } from 'ant-design-vue'
+import { ExportReport, SelectDirectory } from '../../wailsjs/go/backend/App'
 import type { services } from '../../wailsjs/go/models'
 import html2canvas from 'html2canvas'
 
 export function useReport() {
   const exporting = ref(false)
+
+  // 选择导出目录
+  const selectExportDirectory = async (): Promise<string | null> => {
+    try {
+      const dirPath = await SelectDirectory()
+      return dirPath
+    } catch (error: any) {
+      if (!error.message?.includes('用户取消')) {
+        message.error(`选择目录失败: ${error.message || error}`)
+      }
+      return null
+    }
+  }
 
   // 截取元素截图
   const captureElement = async (element: HTMLElement): Promise<string> => {
@@ -33,7 +46,8 @@ export function useReport() {
   // 导出报告
   const exportReport = async (
     connectionIds: string[],
-    vulnerabilities?: services.VulnerabilityData[]
+    vulnerabilities?: services.VulnerabilityData[],
+    outputPath?: string
   ) => {
     if (connectionIds.length === 0) {
       message.warning('请选择要导出的连接')
@@ -45,6 +59,7 @@ export function useReport() {
       const req: services.ExportReportRequest = {
         connectionIds,
         vulnerabilities: vulnerabilities || [],
+        outputPath: outputPath || '',
       }
 
       const filePath = await ExportReport(req)
@@ -61,11 +76,49 @@ export function useReport() {
   // 从连接卡片导出报告（带截图）
   const exportReportWithScreenshots = async (
     connectionIds: string[],
-    getCardElement: (id: string) => HTMLElement | null
+    getCardElement: (id: string) => HTMLElement | null,
+    askForDirectory = true
   ) => {
     if (connectionIds.length === 0) {
       message.warning('请选择要导出的连接')
       return
+    }
+
+    // 询问是否自定义导出路径
+    let outputPath = ''
+    if (askForDirectory) {
+      const result = await new Promise<boolean>((resolve) => {
+        Modal.confirm({
+          title: '选择导出路径',
+          content: '是否自定义报告导出路径？点击"确定"选择目录，点击"取消"使用默认路径。',
+          okText: '选择目录',
+          cancelText: '使用默认路径',
+          onOk: () => resolve(true),
+          onCancel: () => resolve(false),
+        })
+      })
+
+      if (result) {
+        const selectedPath = await selectExportDirectory()
+        if (selectedPath) {
+          outputPath = selectedPath
+        } else {
+          // 用户取消了目录选择，询问是否继续使用默认路径
+          const continueWithDefault = await new Promise<boolean>((resolve) => {
+            Modal.confirm({
+              title: '提示',
+              content: '未选择目录，是否使用默认路径导出？',
+              okText: '使用默认路径',
+              cancelText: '取消导出',
+              onOk: () => resolve(true),
+              onCancel: () => resolve(false),
+            })
+          })
+          if (!continueWithDefault) {
+            return
+          }
+        }
+      }
     }
 
     exporting.value = true
@@ -119,6 +172,7 @@ export function useReport() {
       const req: services.ExportReportRequest = {
         connectionIds,
         vulnerabilities,
+        outputPath,
       }
 
       console.log('调用后端 ExportReport API:', req)
@@ -159,5 +213,6 @@ export function useReport() {
     exportReport,
     exportReportWithScreenshots,
     captureElement,
+    selectExportDirectory,
   }
 }

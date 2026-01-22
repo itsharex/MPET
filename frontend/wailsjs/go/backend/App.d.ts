@@ -56,6 +56,8 @@ export function ImportCSV():Promise<number>;
 
 export function SaveVulnerability(arg1:models.VulnerabilityInfo):Promise<void>;
 
+export function SelectDirectory():Promise<string>;
+
 export function Startup(arg1:context.Context):Promise<void>;
 
 export function TestConnection(arg1:models.ConnectionRequest):Promise<string>;

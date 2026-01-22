@@ -172,6 +172,7 @@ export namespace services {
 	export class ExportReportRequest {
 	    connectionIds: string[];
 	    vulnerabilities: VulnerabilityData[];
+	    outputPath: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ExportReportRequest(source);
@@ -181,6 +182,7 @@ export namespace services {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.connectionIds = source["connectionIds"];
 	        this.vulnerabilities = this.convertValues(source["vulnerabilities"], VulnerabilityData);
+	        this.outputPath = source["outputPath"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -38,6 +38,7 @@ type VulnerabilityData struct {
 type ExportReportRequest struct {
 	ConnectionIDs   []string            `json:"connectionIds"`   // 要导出的连接ID列表
 	Vulnerabilities []VulnerabilityData `json:"vulnerabilities"` // 漏洞数据列表
+	OutputPath      string              `json:"outputPath"`      // 自定义输出路径（可选）
 }
 
 // ExportReport 导出 Markdown 格式报告
@@ -71,7 +72,16 @@ func (s *ReportService) ExportReport(req ExportReportRequest) (string, error) {
 
 	// 创建输出目录
 	timestamp := time.Now().Format("20060102_150405")
-	reportDir := filepath.Join("reports", fmt.Sprintf("report_%s", timestamp))
+	var reportDir string
+	
+	if req.OutputPath != "" {
+		// 使用自定义路径
+		reportDir = filepath.Join(req.OutputPath, fmt.Sprintf("report_%s", timestamp))
+	} else {
+		// 使用默认路径
+		reportDir = filepath.Join("reports", fmt.Sprintf("report_%s", timestamp))
+	}
+	
 	assetsDir := filepath.Join(reportDir, "assets")
 	
 	if err := os.MkdirAll(assetsDir, 0755); err != nil {
